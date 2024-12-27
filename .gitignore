@@ -1,0 +1,15 @@
+# Node.js modules
+frontend/node_modules/
+
+# Build files
+frontend/build/
+backend/*.exe
+backend/*.out
+
+# Temporary files
+*.log
+*.tmp
+
+# IDE-specific files
+.vscode/
+.idea/
