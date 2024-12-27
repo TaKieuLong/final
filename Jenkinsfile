@@ -49,18 +49,6 @@ pipeline {
             }
         }
 
-        stage('Start PostgreSQL') {
-            steps {
-                script {
-                    sh """
-                    docker network create dev || echo "Network 'dev' already exists"
-                    docker run -d --rm --name postgres --network dev -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=productdb -p 5432:5432 ${POSTGRES_IMAGE}
-                    sleep 10
-                    """
-                }
-            }
-        }
-
         stage('Deploy Backend and Frontend') {
             steps {
                 script {

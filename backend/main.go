@@ -2,91 +2,70 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
-	"os"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 )
 
-var db *sql.DB
-
-func initDB() {
-	var err error
-	dbHost := os.Getenv("DB_HOST")
-	dbPort := os.Getenv("DB_PORT")
-	dbUser := os.Getenv("DB_USER")
-	dbPassword := os.Getenv("DB_PASSWORD")
-	dbName := os.Getenv("DB_NAME")
-
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		dbHost, dbPort, dbUser, dbPassword, dbName)
-
-	db, err = sql.Open("postgres", dsn)
-	if err != nil {
-		log.Fatalf("Error opening database: %v", err)
-	}
-
-	if err = db.Ping(); err != nil {
-		log.Fatalf("Error connecting to the database: %v", err)
-	}
-
-	log.Println("Connected to the database successfully!")
+type Product struct {
+	ID          int     `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Price       float64 `json:"price"`
+	ImageURL    string  `json:"image_url"`
 }
 
+var db *sql.DB
+
 func main() {
-	initDB()
+	var err error
+	db, err = sql.Open("postgres", "host=k3n9EG8zPxrgH6Lbzb3gznCZs2R4QMh5@dpg-ctnaut5umphs73c4p70g-a.singapore-postgres.render.com user=final_user password=k3n9EG8zPxrgH6Lbzb3gznCZs2R4QMh5 dbname=final_db_1jle port=5432 sslmode=require")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	r := gin.Default()
+
+	r.POST("/products", func(c *gin.Context) {
+		var product Product
+		if err := c.ShouldBindJSON(&product); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		err := db.QueryRow(
+			"INSERT INTO products (name, description, price, image_url) VALUES ($1, $2, $3, $4) RETURNING id",
+			product.Name, product.Description, product.Price, product.ImageURL,
+		).Scan(&product.ID)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusCreated, product)
+	})
+
 	r.GET("/products", func(c *gin.Context) {
 		rows, err := db.Query("SELECT id, name, description, price, image_url FROM products")
 		if err != nil {
-			c.JSON(500, gin.H{"error": "Failed to fetch products"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		defer rows.Close()
 
-		var products []map[string]interface{}
+		var products []Product
 		for rows.Next() {
-			var id int
-			var name, description, imageURL string
-			var price float64
-			if err := rows.Scan(&id, &name, &description, &price, &imageURL); err != nil {
-				c.JSON(500, gin.H{"error": "Failed to parse products"})
+			var product Product
+			if err := rows.Scan(&product.ID, &product.Name, &product.Description, &product.Price, &product.ImageURL); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
 			}
-			products = append(products, gin.H{
-				"id":          id,
-				"name":        name,
-				"description": description,
-				"price":       price,
-				"image_url":   imageURL,
-			})
+			products = append(products, product)
 		}
-		c.JSON(200, products)
-	})
-
-	r.POST("/products", func(c *gin.Context) {
-		var product struct {
-			Name        string  `json:"name"`
-			Description string  `json:"description"`
-			Price       float64 `json:"price"`
-			ImageURL    string  `json:"image_url"`
-		}
-		if err := c.ShouldBindJSON(&product); err != nil {
-			c.JSON(400, gin.H{"error": err.Error()})
-			return
-		}
-
-		_, err := db.Exec("INSERT INTO products (name, description, price, image_url) VALUES ($1, $2, $3, $4)",
-			product.Name, product.Description, product.Price, product.ImageURL)
-		if err != nil {
-			c.JSON(500, gin.H{"error": "Failed to create product"})
-			return
-		}
-
-		c.JSON(201, gin.H{"message": "Product created successfully!"})
+		c.JSON(http.StatusOK, products)
 	})
 
 	r.Run(":8084")
