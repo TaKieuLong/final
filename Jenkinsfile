@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_REGISTRY = 'your_dockerhub_username'
+        DOCKER_REGISTRY = 'takieulong'
         BACKEND_IMAGE = "takieulong/backend-app"
         FRONTEND_IMAGE = "takieulong/frontend-app"
         POSTGRES_IMAGE = "postgres:15"
@@ -14,7 +14,7 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'main', url: 'https://github.com/your_username/your_repository.git'
+                git branch: 'master', url: 'https://github.com/TaKieuLong/final.git'
             }
         }
 
