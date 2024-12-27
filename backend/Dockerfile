@@ -1,31 +1,8 @@
-# Dockerfile for Backend
-FROM golang:1.20 as builder
-
-# Set working directory
+FROM golang:1.23-alpine3.20
 WORKDIR /app
-
-# Copy go mod and sum files
 COPY go.mod go.sum ./
-
-# Download dependencies
-RUN go mod download
-
-# Copy source code
+RUN go mod tidy
 COPY . .
-
-# Build the Go app
 RUN go build -o main .
-
-# Final stage
-FROM alpine:3.18
-
-WORKDIR /root/
-
-# Copy compiled binary from builder
-COPY --from=builder /app/main .
-
-# Expose the app port
 EXPOSE 8084
-
-# Command to run the executable
 CMD ["./main"]
