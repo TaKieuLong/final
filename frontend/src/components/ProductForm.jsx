@@ -25,7 +25,7 @@ const CreateProductForm = () => {
             <input name="description" placeholder="Description" onChange={handleChange} />
             <input name="price" placeholder="Price" onChange={handleChange} />
             <input name="image_url" placeholder="Image URL" onChange={handleChange} />
-            <button type="submit">Create Product</button>
+            <button type="submit">Tạo</button>
         </form>
     );
 };
